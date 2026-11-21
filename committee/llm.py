@@ -34,7 +34,7 @@ class OpenAICompatibleLLM(LLM):
 
         if os.environ.get("GROQ_API_KEY"):
             self.client = OpenAI(api_key=os.environ["GROQ_API_KEY"], base_url=GROQ_BASE_URL, max_retries=6)
-            default_model = "llama-3.3-70b-versatile"
+            default_model = "openai/gpt-oss-120b"
         elif os.environ.get("GEMINI_API_KEY"):
             self.client = OpenAI(api_key=os.environ["GEMINI_API_KEY"], base_url=GEMINI_BASE_URL,
                                  max_retries=6)  # free tier has per-minute limits; the SDK backs off and retries
