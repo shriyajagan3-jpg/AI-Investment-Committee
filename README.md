@@ -2,24 +2,9 @@
 
 Five AI agents run a private equity investment committee on any US public company. They pull the company's real financials from SEC filings, model a leveraged buyout, argue about it, and vote to **INVEST** or **PASS**.
 
-![screenshot](screenshot.png) <!-- add a screenshot of the app here -->
-
 ## How it works
 
-```
-SEC EDGAR (XBRL financials + 10-K risk factors)
-        │
-        ▼
-Python LBO engine ── base case + IRR sensitivity grid
-        │
-        ▼
-Analyst → Risk Officer → Modeler → Skeptic → Deal Lead → Chair → Memo
-                           │          │          │
-                           └── call the LBO engine as a tool ──┘
-        │
-        ▼
-Fact-checker: every number in the memo is traced back to computed data
-```
+![Architecture](docs/architecture.svg)
 
 | Agent | Job |
 |---|---|

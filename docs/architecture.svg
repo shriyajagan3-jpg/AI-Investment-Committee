@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b949e"/></marker>
+  </defs>
+  <rect width="900" height="470" rx="14" fill="#0d1117"/>
+  <text x="450" y="38" text-anchor="middle" fill="#e6edf3" font-size="20" font-weight="bold">AI Investment Committee</text>
+
+  <!-- data -->
+  <rect x="40" y="70" width="250" height="70" rx="10" fill="#161b22" stroke="#30363d"/>
+  <text x="165" y="100" text-anchor="middle" fill="#e6edf3" font-size="15" font-weight="bold">SEC EDGAR</text>
+  <text x="165" y="122" text-anchor="middle" fill="#8b949e" font-size="12">XBRL financials + 10-K risk factors</text>
+
+  <rect x="325" y="70" width="250" height="70" rx="10" fill="#161b22" stroke="#30363d"/>
+  <text x="450" y="100" text-anchor="middle" fill="#e6edf3" font-size="15" font-weight="bold">Financials engine</text>
+  <text x="450" y="122" text-anchor="middle" fill="#8b949e" font-size="12">clean annual data, margins, FCF</text>
+
+  <rect x="610" y="70" width="250" height="70" rx="10" fill="#1f3a2a" stroke="#2ea043"/>
+  <text x="735" y="100" text-anchor="middle" fill="#e6edf3" font-size="15" font-weight="bold">Python LBO model</text>
+  <text x="735" y="122" text-anchor="middle" fill="#8b949e" font-size="12">IRR, MOIC, coverage, sensitivity</text>
+
+  <line x1="290" y1="105" x2="322" y2="105" stroke="#8b949e" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="575" y1="105" x2="607" y2="105" stroke="#8b949e" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- agents -->
+  <text x="450" y="190" text-anchor="middle" fill="#8b949e" font-size="13">The committee debates in order; each agent sees what came before</text>
+  <g font-size="13" font-weight="bold" fill="#e6edf3" text-anchor="middle">
+    <rect x="40" y="210" width="130" height="50" rx="10" fill="#161b22" stroke="#388bfd"/><text x="105" y="240">Analyst</text>
+    <rect x="195" y="210" width="130" height="50" rx="10" fill="#161b22" stroke="#388bfd"/><text x="260" y="240">Risk Officer</text>
+    <rect x="350" y="210" width="130" height="50" rx="10" fill="#161b22" stroke="#d29922"/><text x="415" y="240">Modeler</text>
+    <rect x="505" y="210" width="130" height="50" rx="10" fill="#161b22" stroke="#d29922"/><text x="570" y="240">Skeptic</text>
+    <rect x="660" y="210" width="130" height="50" rx="10" fill="#161b22" stroke="#d29922"/><text x="725" y="240">Deal Lead</text>
+  </g>
+  <g stroke="#8b949e" stroke-width="2" marker-end="url(#a)">
+    <line x1="170" y1="235" x2="192" y2="235"/><line x1="325" y1="235" x2="347" y2="235"/>
+    <line x1="480" y1="235" x2="502" y2="235"/><line x1="635" y1="235" x2="657" y2="235"/>
+    <line x1="790" y1="235" x2="815" y2="235"/><line x1="815" y1="235" x2="815" y2="315"/>
+  </g>
+  <!-- tool calls -->
+  <path d="M415,210 C415,170 700,175 720,143" fill="none" stroke="#d29922" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#a)"/>
+  <path d="M570,210 C570,180 720,180 735,143" fill="none" stroke="#d29922" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#a)"/>
+  <path d="M725,210 C725,190 750,170 750,143" fill="none" stroke="#d29922" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#a)"/>
+  <text x="330" y="292" fill="#d29922" font-size="12">orange = agents call the LBO model as a tool (no math in the LLM)</text>
+
+  <!-- outputs -->
+  <rect x="560" y="318" width="300" height="60" rx="10" fill="#161b22" stroke="#a371f7"/>
+  <text x="710" y="344" text-anchor="middle" fill="#e6edf3" font-size="15" font-weight="bold">Chair: INVEST or PASS</text>
+  <text x="710" y="364" text-anchor="middle" fill="#8b949e" font-size="12">conviction, conditions, what changes its mind</text>
+  <line x1="560" y1="348" x2="488" y2="348" stroke="#8b949e" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="200" y="318" width="285" height="60" rx="10" fill="#161b22" stroke="#30363d"/>
+  <text x="342" y="344" text-anchor="middle" fill="#e6edf3" font-size="15" font-weight="bold">Investment memo</text>
+  <text x="342" y="364" text-anchor="middle" fill="#8b949e" font-size="12">scenarios table, risks, debate summary</text>
+  <line x1="342" y1="378" x2="342" y2="400" stroke="#8b949e" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="150" y="403" width="385" height="50" rx="10" fill="#3a1d1d" stroke="#f85149"/>
+  <text x="342" y="425" text-anchor="middle" fill="#e6edf3" font-size="14" font-weight="bold">Fact-checker</text>
+  <text x="342" y="443" text-anchor="middle" fill="#8b949e" font-size="12">traces every number back to computed data, flags invented ones</text>
+</svg>
