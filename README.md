@@ -2,6 +2,10 @@
 
 Five AI agents run a private equity investment committee on any US public company. They pull the company's real financials from SEC filings, model a leveraged buyout, argue about it, and vote to **INVEST** or **PASS**.
 
+**Example: Church & Dwight (CHD) at 11x EBITDA, 5x leverage, 20% hurdle**
+
+![Committee decision for CHD](docs/decision.png)
+
 ## How it works
 
 ![Architecture](docs/architecture.svg)
