@@ -22,7 +22,7 @@
   <line x1="575" y1="105" x2="607" y2="105" stroke="#8b949e" stroke-width="2" marker-end="url(#a)"/>
 
   <!-- agents -->
-  <text x="450" y="190" text-anchor="middle" fill="#8b949e" font-size="13">The committee debates in order; each agent sees what came before</text>
+  <text x="40" y="288" fill="#8b949e" font-size="13">The committee debates in order; each agent sees what came before</text>
   <g font-size="13" font-weight="bold" fill="#e6edf3" text-anchor="middle">
     <rect x="40" y="210" width="130" height="50" rx="10" fill="#161b22" stroke="#388bfd"/><text x="105" y="240">Analyst</text>
     <rect x="195" y="210" width="130" height="50" rx="10" fill="#161b22" stroke="#388bfd"/><text x="260" y="240">Risk Officer</text>
@@ -39,7 +39,7 @@
   <path d="M415,210 C415,170 700,175 720,143" fill="none" stroke="#d29922" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#a)"/>
   <path d="M570,210 C570,180 720,180 735,143" fill="none" stroke="#d29922" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#a)"/>
   <path d="M725,210 C725,190 750,170 750,143" fill="none" stroke="#d29922" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#a)"/>
-  <text x="330" y="292" fill="#d29922" font-size="12">orange = agents call the LBO model as a tool (no math in the LLM)</text>
+  <text x="40" y="306" fill="#d29922" font-size="12">orange = agents call the LBO model as a tool (no math in the LLM)</text>
 
   <!-- outputs -->
   <rect x="560" y="318" width="300" height="60" rx="10" fill="#161b22" stroke="#a371f7"/>
