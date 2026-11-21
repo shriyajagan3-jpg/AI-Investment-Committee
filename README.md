@@ -30,7 +30,8 @@ pip install -r requirements.txt
 export SEC_USER_AGENT="Your Name your_email@example.com"
 
 # Pick ONE model provider:
-export GEMINI_API_KEY="..."     # free tier: get a key at aistudio.google.com
+export GROQ_API_KEY="gsk_..."   # free tier: get a key at console.groq.com/keys
+# export GEMINI_API_KEY="..."   # or Google Gemini (free tier, aistudio.google.com)
 # export OPENAI_API_KEY="sk-..."  # or OpenAI (paid)
 # optional: export LLM_MODEL="model-name" to override the default model
 
@@ -58,7 +59,7 @@ committee/financials.py   XBRL -> clean annual financials + ratios
 committee/lbo.py          LBO model + sensitivity grid
 committee/agents.py       Agent roles, tool-calling loop, meeting orchestration
 committee/factcheck.py    Number verification for the memo
-committee/llm.py          Model wrapper: Gemini or OpenAI, or a fake model in tests
+committee/llm.py          Model wrapper: Groq, Gemini or OpenAI, or a fake model in tests
 tests/                    Offline unit + end-to-end tests
 ```
 
