@@ -8,6 +8,7 @@ import streamlit as st
 from committee.agents import build_context, run_committee
 from committee.llm import OpenAILLM
 from committee.sec_data import get_cik, get_company_facts, get_risk_factors
+from committee.storage import connect, save_run
 
 st.set_page_config(page_title="AI Investment Committee", page_icon="📈", layout="wide")
 st.title("AI Investment Committee")
@@ -81,6 +82,7 @@ if go:
 
     status = st.empty()
     llm = OpenAILLM()
+    verdict = {}
     for ev in run_committee(llm, ctx):
         t = ev["type"]
         if t == "model":
@@ -111,7 +113,7 @@ if go:
             with st.chat_message(ev["agent"], avatar=AVATARS.get(ev["agent"])):
                 st.markdown(f"**{ev['agent']}**\n\n{md(ev['text'])}")
         elif t == "verdict":
-            v = ev["verdict"]
+            v = verdict = ev["verdict"]
             st.markdown("### Decision")
             color = "green" if v.get("decision") == "INVEST" else "red"
             st.markdown(f"## :{color}[{v.get('decision', '?')}]  ·  conviction {v.get('conviction', '?')}/10")
@@ -132,5 +134,10 @@ if go:
                 st.warning("Could not verify: " + ", ".join(fc["unverified"]))
             st.markdown(md(ev["memo"]))
             st.download_button("Download memo (.md)", ev["memo"], file_name=f"{ticker.upper()}_IC_memo.md")
+            try:
+                run_id = save_run(connect(), ctx, verdict, fc, llm.model)
+                st.caption(f"Saved to committee.db as run #{run_id}")
+            except Exception as e:
+                st.caption(f"Could not save this run to the database: {e}")
 else:
     st.info("Pick a ticker and deal terms on the left, then convene the committee.")

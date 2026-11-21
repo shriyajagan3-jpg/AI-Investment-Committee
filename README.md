@@ -49,6 +49,17 @@ On Windows PowerShell use `$env:SEC_USER_AGENT="..."` instead of `export`.
 
 Tip: use mid-size, stable businesses (e.g. CHD, CLX, HRB, DPZ). Mega-caps like AAPL are too large for any real LBO, and the model warns you.
 
+## Run it on many companies + SQL
+
+Every run (in the app or the batch script) is saved to `committee.db`, a SQLite database with two tables: `runs` (one row per committee meeting) and `scenarios` (every LBO scenario an agent ran).
+
+```bash
+python3 batch.py                 # runs the committee on 25 mid-size companies, then prints a summary
+sqlite3 committee.db < queries.sql   # 8 starter queries: decisions, fact-check accuracy, worst stress tests...
+```
+
+The batch script is safe to stop and restart; finished companies are skipped.
+
 ## Tests
 
 ```bash
@@ -61,11 +72,14 @@ Tests run offline: LBO math checked against a hand calculation, pricing behavior
 
 ```
 app.py                    Streamlit UI
+batch.py                  Run the committee on many tickers
+queries.sql               Starter SQL queries over the results
 committee/sec_data.py     SEC EDGAR API calls, 10-K risk section extraction
 committee/financials.py   XBRL -> clean annual financials + ratios
 committee/lbo.py          LBO model + sensitivity grid
 committee/agents.py       Agent roles, tool-calling loop, meeting orchestration
 committee/factcheck.py    Number verification for the memo
+committee/storage.py      SQLite schema + saving each run
 committee/llm.py          Model wrapper: Groq, Gemini or OpenAI, or a fake model in tests
 tests/                    Offline unit + end-to-end tests
 ```
