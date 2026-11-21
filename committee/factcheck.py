@@ -15,7 +15,7 @@ NUMBER = re.compile(r"(?<![\w.])-?\d[\d,]*(?:\.\d+)?\s*(%|x|[BM]\b|bn|billion|mi
 
 def _variants(v: float) -> list[float]:
     """One true value -> every scale it might appear in."""
-    return [v, v / 1e6, v / 1e9, v * 100]
+    return [v, v / 1e3, v / 1e6, v / 1e9, v * 100]  # /1e3: a $M figure quoted in billions
 
 
 def build_pool(ctx, grid: dict) -> list[float]:

@@ -18,6 +18,7 @@ Five AI agents run a private equity investment committee on any US public compan
 **Design choices**
 - **LLMs never do the math.** Agents choose assumptions; a tested Python LBO model computes IRR, MOIC, leverage, and interest coverage.
 - **Decision guardrail.** If the Chair votes INVEST but the Deal Lead's final terms, as actually modeled, miss the fund's hurdle IRR, code overrides the vote to PASS. Agents can't talk their way past the math.
+- **Market terms are locked.** The purchase multiple and interest rate come from the user (the seller's price and lenders' rate). Agents can stress them upward but can't "fix" a deal by assuming a cheaper price or cheaper debt.
 - **Correct LBO pricing.** The purchase price is set on the company's actual latest EBITDA; margin and growth stresses only change the projected years.
 - **Hallucination check.** `factcheck.py` extracts every number from the final memo and matches it against the data the system computed (in $, $M, $B, and %), then flags anything it can't trace.
 - **No agent framework.** The tool-calling loop is about 20 lines in `agents.py`, so the orchestration is fully visible.
@@ -67,5 +68,5 @@ tests/                    Offline unit + end-to-end tests
 
 ## Limitations
 - Simplified LBO: single debt tranche, no transaction fees, no dividends during the hold.
-- Entry price is set by the user (no live market data).
+- Entry price is set by the user (no live market data); set it near the company's real trading multiple for realistic results.
 - Not investment advice.

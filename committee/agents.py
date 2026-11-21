@@ -29,6 +29,7 @@ LBO_TOOL = {
         "name": "run_lbo_scenario",
         "description": ("Run the LBO model with changed assumptions and get IRR, MOIC, leverage and "
                         "interest coverage back. Unchanged fields keep the current base case. "
+                        "entry_multiple and interest_rate cannot go below the market terms. "
                         "Percentages are decimals (0.05 = 5%)."),
         "parameters": {
             "type": "object",
@@ -72,7 +73,9 @@ ROLES = {
                 "dissenter: never recommend approving the deal, even if the risks look manageable."),
     "Deal Lead": ("You are the Deal Lead who sponsors this deal. Respond point by point to the Skeptic. "
                   "Concede what is true. Where you disagree, give evidence from the financials, and you may "
-                  "run run_lbo_scenario to show a mitigation (e.g. lower leverage or a cheaper entry price). "
+                  "run run_lbo_scenario to show a mitigation (e.g. less leverage, a longer hold, a different exit "
+                  "multiple you can justify). The purchase price and interest rate are set by the market and "
+                  "cannot be lowered. "
                   "Your LAST tool call must be your final proposed terms; quote its IRR exactly. If no terms "
                   "you tested reach the fund's hurdle, say so honestly."),
 }
@@ -116,17 +119,29 @@ def run_scenario_tool(ctx: Context, args: dict) -> dict:
     overrides = {k: v for k, v in (args.get("overrides") or {}).items() if k in ASSUMPTION_FIELDS}
     if "hold_years" in overrides:
         overrides["hold_years"] = int(overrides["hold_years"])
+    # Market terms: the purchase price and cost of debt are set by the seller and lenders
+    # (the sidebar), not by the committee. Agents may stress them up, never wish them down.
+    notes = []
+    for key, label in (("entry_multiple", "purchase multiple"), ("interest_rate", "interest rate")):
+        floor = getattr(ctx.base, key)
+        if key in overrides and overrides[key] < floor:
+            notes.append(f"{label} {overrides[key]} raised to the market floor {floor}: the committee "
+                         f"does not set the seller's price or lenders' rate")
+            overrides[key] = floor
     a = LBOAssumptions(**{**asdict(ctx.base), **overrides})
     try:
         r = run_lbo(ctx.base_revenue, a, ctx.entry_ebitda)
         out = {"scenario": args.get("scenario_name", "unnamed"), "irr_pct": round(r.irr * 100, 1),
                "moic": round(r.moic, 2), "entry_ev_musd": round(r.entry_ev / 1e6),
                "exit_ev_musd": round(r.exit_ev / 1e6),
+               "entry_debt_musd": round((r.entry_ev - r.entry_equity) / 1e6),
                "exit_leverage": round(r.years[-1]["leverage"] or 0, 1),
                "min_interest_coverage": round(min(y["interest_coverage"] or 99 for y in r.years), 1),
                "warnings": r.warnings, "assumptions": asdict(a)}
     except ValueError as e:
         out = {"scenario": args.get("scenario_name", "unnamed"), "error": str(e), "assumptions": asdict(a)}
+    if notes:
+        out["market_floor_notes"] = notes
     out["by"] = args.get("_agent", "")
     out["rationale"] = args.get("rationale", "")
     ctx.scenarios.append(out)

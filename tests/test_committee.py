@@ -69,3 +69,14 @@ def test_guardrail_overrides_unsupported_invest():
     assert v["decision"] == "PASS" and "11.2" in v["guardrail"]
     ctx.scenarios[-1]["irr_pct"] = 22.0
     assert apply_guardrail({"decision": "INVEST"}, ctx)["decision"] == "INVEST"
+
+
+def test_agents_cannot_lower_price_or_rate():
+    from committee.agents import run_scenario_tool
+    ctx = build_context("TEST", "Test Co", make_facts(), "", deal_terms={"entry_multiple": 11, "interest_rate": 0.09})
+    out = run_scenario_tool(ctx, {"scenario_name": "wishful", "overrides": {"entry_multiple": 8.5, "interest_rate": 0.07,
+                                                                          "leverage": 4.0}})
+    assert out["assumptions"]["entry_multiple"] == 11 and out["assumptions"]["interest_rate"] == 0.09
+    assert out["assumptions"]["leverage"] == 4.0 and len(out["market_floor_notes"]) == 2
+    up = run_scenario_tool(ctx, {"scenario_name": "pricier", "overrides": {"entry_multiple": 13}})
+    assert up["assumptions"]["entry_multiple"] == 13 and "market_floor_notes" not in up
