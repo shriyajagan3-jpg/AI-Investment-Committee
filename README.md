@@ -1,0 +1,80 @@
+# AI Investment Committee
+
+Five AI agents run a private equity investment committee on any US public company. They pull the company's real financials from SEC filings, model a leveraged buyout, argue about it, and vote to **INVEST** or **PASS**.
+
+![screenshot](screenshot.png) <!-- add a screenshot of the app here -->
+
+## How it works
+
+```
+SEC EDGAR (XBRL financials + 10-K risk factors)
+        │
+        ▼
+Python LBO engine ── base case + IRR sensitivity grid
+        │
+        ▼
+Analyst → Risk Officer → Modeler → Skeptic → Deal Lead → Chair → Memo
+                           │          │          │
+                           └── call the LBO engine as a tool ──┘
+        │
+        ▼
+Fact-checker: every number in the memo is traced back to computed data
+```
+
+| Agent | Job |
+|---|---|
+| Analyst | Judges business quality: growth, margins, cash conversion, existing debt |
+| Risk Officer | Picks the 4 risks from the 10-K that matter for a buyout and links each to a model assumption to stress |
+| Modeler | Runs base, upside, and downside cases with the LBO tool |
+| Skeptic | Stress-tests the Risk Officer's scenarios with the tool and argues to pass |
+| Deal Lead | Rebuts the Skeptic, concedes what's true, and proposes terms that still work |
+| Chair | Returns a structured decision: INVEST/PASS, conviction, conditions |
+
+**Design choices**
+- **LLMs never do the math.** Agents choose assumptions; a tested Python LBO model computes IRR, MOIC, leverage, and interest coverage.
+- **Hallucination check.** `factcheck.py` extracts every number from the final memo and matches it against the data the system computed (in $, $M, $B, and %), then flags anything it can't trace.
+- **No agent framework.** The tool-calling loop is about 20 lines in `agents.py`, so the orchestration is fully visible.
+- **Real data handling.** XBRL tag fallbacks (companies rename revenue tags over time), full-year filtering, restated numbers preferred.
+
+## Run it
+
+```bash
+pip install -r requirements.txt
+
+# The SEC requires a contact in the User-Agent header
+export SEC_USER_AGENT="Your Name your_email@example.com"
+export OPENAI_API_KEY="sk-..."
+# optional: export OPENAI_MODEL="gpt-4o-mini"
+
+streamlit run app.py
+```
+
+On Windows PowerShell use `$env:SEC_USER_AGENT="..."` instead of `export`.
+
+Tip: use mid-size, stable businesses (e.g. CHD, CLX, HRB, DPZ). Mega-caps like AAPL are too large for any real LBO, and the model warns you.
+
+## Tests
+
+```bash
+python -m pytest -q
+```
+
+Tests run offline: LBO math checked against a hand calculation, XBRL parsing edge cases, and a full committee meeting with a scripted fake model (which also checks that the fact-checker catches an invented IRR).
+
+## Project layout
+
+```
+app.py                    Streamlit UI
+committee/sec_data.py     SEC EDGAR API calls, 10-K risk section extraction
+committee/financials.py   XBRL -> clean annual financials + ratios
+committee/lbo.py          LBO model + sensitivity grid
+committee/agents.py       Agent roles, tool-calling loop, meeting orchestration
+committee/factcheck.py    Number verification for the memo
+committee/llm.py          Model wrapper (swap providers or use a fake in tests)
+tests/                    Offline unit + end-to-end tests
+```
+
+## Limitations
+- Simplified LBO: single debt tranche, no transaction fees, no dividends during the hold.
+- Entry price is set by the user (no live market data).
+- Not investment advice.
