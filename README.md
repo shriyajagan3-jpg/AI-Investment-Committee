@@ -28,8 +28,11 @@ pip install -r requirements.txt
 
 # The SEC requires a contact in the User-Agent header
 export SEC_USER_AGENT="Your Name your_email@example.com"
-export OPENAI_API_KEY="sk-..."
-# optional: export OPENAI_MODEL="gpt-4o-mini"
+
+# Pick ONE model provider:
+export GEMINI_API_KEY="..."     # free tier: get a key at aistudio.google.com
+# export OPENAI_API_KEY="sk-..."  # or OpenAI (paid)
+# optional: export LLM_MODEL="model-name" to override the default model
 
 streamlit run app.py
 ```
@@ -55,7 +58,7 @@ committee/financials.py   XBRL -> clean annual financials + ratios
 committee/lbo.py          LBO model + sensitivity grid
 committee/agents.py       Agent roles, tool-calling loop, meeting orchestration
 committee/factcheck.py    Number verification for the memo
-committee/llm.py          Model wrapper (swap providers or use a fake in tests)
+committee/llm.py          Model wrapper: Gemini or OpenAI, or a fake model in tests
 tests/                    Offline unit + end-to-end tests
 ```
 
