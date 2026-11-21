@@ -14,6 +14,11 @@ st.title("AI Investment Committee")
 st.caption("Five AI agents debate a leveraged buyout using the company's real SEC filings. "
            "All math runs in Python; a fact-checker flags any number the AI invents.")
 
+def md(text: str) -> str:
+    """Escape $ so Streamlit doesn't render '$5,190 M to $6,203 M' as a math formula."""
+    return (text or "").replace("$", "\\$")
+
+
 AVATARS = {"Analyst": "📊", "Risk Officer": "⚠️", "Modeler": "🧮", "Skeptic": "🤨", "Deal Lead": "🤝"}
 
 with st.sidebar:
@@ -24,6 +29,7 @@ with st.sidebar:
     leverage = st.slider("Debt (x EBITDA)", 2.0, 7.0, 5.0, 0.5)
     rate = st.slider("Interest rate", 0.04, 0.14, 0.09, 0.005, format="%.3f")
     hold = st.slider("Hold period (years)", 3, 7, 5)
+    hurdle = st.slider("Fund hurdle IRR (%)", 10, 30, 20) / 100
     go = st.button("Convene the committee", type="primary", use_container_width=True)
 
 
@@ -48,7 +54,7 @@ if go:
             name, facts, risks, url = load(ticker)
         ctx = build_context(ticker, name, facts, risks, url, deal_terms={
             "entry_multiple": entry, "exit_multiple": exit_, "leverage": leverage,
-            "interest_rate": rate, "hold_years": hold})
+            "interest_rate": rate, "hold_years": hold}, hurdle=hurdle)
     except Exception as e:
         st.error(f"Couldn't load {ticker}: {e}")
         st.stop()
@@ -56,6 +62,9 @@ if go:
     st.subheader(f"{name} ({ticker.upper()})")
     if url:
         st.caption(f"Source: [latest 10-K]({url}) and SEC XBRL financial data")
+    with st.expander(f"10-K risk factors given to the Risk Officer ({len(risks):,} characters)"):
+        st.write(risks[:3000] + ("..." if len(risks) > 3000 else "") if risks else
+                 "Could not extract the risk section from this filing; the Risk Officer works from the financials only.")
 
     df = pd.DataFrame(ctx.rows)
     df["year"] = df["year"].astype(str)  # show 2024, not 2,024
@@ -100,13 +109,15 @@ if go:
                 st.json(r, expanded=False)
         elif t == "agent":
             with st.chat_message(ev["agent"], avatar=AVATARS.get(ev["agent"])):
-                st.markdown(f"**{ev['agent']}**\n\n{ev['text']}")
+                st.markdown(f"**{ev['agent']}**\n\n{md(ev['text'])}")
         elif t == "verdict":
             v = ev["verdict"]
             st.markdown("### Decision")
             color = "green" if v.get("decision") == "INVEST" else "red"
             st.markdown(f"## :{color}[{v.get('decision', '?')}]  ·  conviction {v.get('conviction', '?')}/10")
-            st.write(v.get("thesis", ""))
+            if v.get("guardrail"):
+                st.error("Guardrail: " + v["guardrail"])
+            st.markdown(md(v.get("thesis", "")))
             if v.get("conditions"):
                 st.markdown("**Conditions:** " + "; ".join(v["conditions"]))
             if v.get("what_would_change_my_mind"):
@@ -119,7 +130,7 @@ if go:
                         f"{len(fc['verified']) + len(fc['unverified'])} numbers traced to source data")
             if fc["unverified"]:
                 st.warning("Could not verify: " + ", ".join(fc["unverified"]))
-            st.markdown(ev["memo"])
+            st.markdown(md(ev["memo"]))
             st.download_button("Download memo (.md)", ev["memo"], file_name=f"{ticker.upper()}_IC_memo.md")
 else:
     st.info("Pick a ticker and deal terms on the left, then convene the committee.")

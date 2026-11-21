@@ -47,7 +47,10 @@ LBO_TOOL = {
 }
 
 STYLE = ("Be concise (under 220 words) and specific. Only cite numbers that appear in the data or tool "
-         "results you were given; never invent figures. Amounts are in $ millions unless stated.")
+         "results you were given; never invent figures. Never invent qualitative facts about the company "
+         "(contracts, backlog, pipeline, guidance) that are not in the material. If you state the returns of "
+         "any set of terms, you must have run them through run_lbo_scenario first. "
+         "Amounts are in $ millions unless stated.")
 
 ROLES = {
     "Analyst": ("You are the Analyst on a private equity investment committee. Judge the quality of the "
@@ -65,16 +68,20 @@ ROLES = {
     "Skeptic": ("You are the Skeptic. Your job is to find the reasons this deal fails. Use run_lbo_scenario "
                 "at least twice to test the Risk Officer's stresses (or harsher ones you can justify). "
                 "Report the IRRs you got, name the single assumption the deal is most fragile to, and "
-                "argue the case to PASS. Attack weak logic from other members directly."),
+                "argue the case to PASS. Attack weak logic from other members directly. You are the designated "
+                "dissenter: never recommend approving the deal, even if the risks look manageable."),
     "Deal Lead": ("You are the Deal Lead who sponsors this deal. Respond point by point to the Skeptic. "
                   "Concede what is true. Where you disagree, give evidence from the financials, and you may "
                   "run run_lbo_scenario to show a mitigation (e.g. lower leverage or a cheaper entry price). "
-                  "Finish with the terms under which you would still do this deal."),
+                  "Your LAST tool call must be your final proposed terms; quote its IRR exactly. If no terms "
+                  "you tested reach the fund's hurdle, say so honestly."),
 }
 
 CHAIR_PROMPT = (
-    "You are the Chair of the investment committee. Weigh the full debate and decide. Typical PE funds "
-    "need roughly 20%+ base-case IRR and a downside that does not lose money. Reply with ONLY a JSON "
+    "You are the Chair of the investment committee. Weigh the full debate and decide. The fund's hurdle "
+    "is {hurdle}% IRR. Vote INVEST only if a scenario that was actually run (not claimed) on realistic "
+    "terms clears that hurdle and the downside does not lose money; otherwise PASS. Ignore any hurdle "
+    "a committee member made up. Reply with ONLY a JSON "
     'object: {"decision": "INVEST" or "PASS", "conviction": 1-10, "thesis": "2 sentences", '
     '"key_risks": ["..."], "conditions": ["terms that must hold to invest"], '
     '"what_would_change_my_mind": "one sentence"}')
@@ -94,6 +101,8 @@ class Context:
     risk_text: str
     base: LBOAssumptions
     base_revenue: float
+    entry_ebitda: float | None = None               # actual latest EBITDA: sets the purchase price
+    hurdle: float = 0.20                            # fund's minimum IRR
     filing_url: str = ""
     scenarios: list = field(default_factory=list)   # every LBO run, for the UI + fact checker
     transcript: list = field(default_factory=list)  # (agent, text) pairs
@@ -109,7 +118,7 @@ def run_scenario_tool(ctx: Context, args: dict) -> dict:
         overrides["hold_years"] = int(overrides["hold_years"])
     a = LBOAssumptions(**{**asdict(ctx.base), **overrides})
     try:
-        r = run_lbo(ctx.base_revenue, a)
+        r = run_lbo(ctx.base_revenue, a, ctx.entry_ebitda)
         out = {"scenario": args.get("scenario_name", "unnamed"), "irr_pct": round(r.irr * 100, 1),
                "moic": round(r.moic, 2), "entry_ev_musd": round(r.entry_ev / 1e6),
                "exit_ev_musd": round(r.exit_ev / 1e6),
@@ -156,19 +165,40 @@ def parse_json(text: str) -> dict:
 
 
 def build_context(ticker: str, company: str, facts: dict, risk_text: str, filing_url: str = "",
-                  deal_terms: dict | None = None) -> Context:
+                  deal_terms: dict | None = None, hurdle: float = 0.20) -> Context:
     rows = build_financials(facts)
     base = LBOAssumptions(**{**asdict(LBOAssumptions()), **base_case_assumptions(rows), **(deal_terms or {})})
+    ebitda = rows[-1].get("ebitda")
     return Context(company=company, ticker=ticker.upper(), rows=rows, risk_text=risk_text,
-                   base=base, base_revenue=rows[-1]["revenue"], filing_url=filing_url)
+                   base=base, base_revenue=rows[-1]["revenue"],
+                   entry_ebitda=ebitda if ebitda and ebitda > 0 else None,
+                   hurdle=hurdle, filing_url=filing_url)
+
+
+def apply_guardrail(verdict: dict, ctx: Context) -> dict:
+    """Code-level check on the Chair: an INVEST must be backed by a scenario that was actually run.
+
+    The Deal Lead's last scenario = the final proposed terms (or the starting base case if the
+    Deal Lead ran nothing). If that IRR is below the hurdle, the INVEST is overridden.
+    """
+    final = next((s for s in reversed(ctx.scenarios) if s.get("by") == "Deal Lead" and "irr_pct" in s),
+                 ctx.scenarios[0])
+    verdict["final_terms_irr_pct"] = final.get("irr_pct")
+    if str(verdict.get("decision", "")).upper() == "INVEST" and (final.get("irr_pct") or 0) < ctx.hurdle * 100:
+        verdict["guardrail"] = (f"Chair voted INVEST, but the final proposed terms were modeled at "
+                                f"{final.get('irr_pct')}% IRR, below the {ctx.hurdle * 100:.0f}% hurdle. "
+                                f"Decision overridden to PASS.")
+        verdict["decision"] = "PASS"
+    return verdict
 
 
 def run_committee(llm: LLM, ctx: Context) -> Iterator[dict]:
     """Runs the full meeting, yielding events so the UI can show progress live."""
-    base_result = run_lbo(ctx.base_revenue, ctx.base)
-    grid = sensitivity(ctx.base_revenue, ctx.base)
+    base_result = run_lbo(ctx.base_revenue, ctx.base, ctx.entry_ebitda)
+    grid = sensitivity(ctx.base_revenue, ctx.base, ctx.entry_ebitda)
     ctx.scenarios.append({"scenario": "Starting base case", "by": "model", "irr_pct": round(base_result.irr * 100, 1),
                           "moic": round(base_result.moic, 2), "entry_ev_musd": round(base_result.entry_ev / 1e6),
+                          "exit_ev_musd": round(base_result.exit_ev / 1e6),
                           "warnings": base_result.warnings, "assumptions": asdict(ctx.base)})
     yield {"type": "model", "base": base_result, "grid": grid}
 
@@ -176,7 +206,8 @@ def run_committee(llm: LLM, ctx: Context) -> Iterator[dict]:
         f"Company: {ctx.company} ({ctx.ticker})\n\nFinancial history:\n{summarize(ctx.rows)}\n\n"
         f"Proposed deal / base-case assumptions: {json.dumps(asdict(ctx.base))}\n"
         f"Starting base case result: IRR {base_result.irr * 100:.1f}%, MOIC {base_result.moic:.2f}x, "
-        f"entry EV ${base_result.entry_ev / 1e6:,.0f}M. Warnings: {base_result.warnings or 'none'}")
+        f"entry EV ${base_result.entry_ev / 1e6:,.0f}M. Fund hurdle: {ctx.hurdle * 100:.0f}% IRR. "
+        f"Warnings: {base_result.warnings or 'none'}")
 
     tool_events = []
 
@@ -200,8 +231,9 @@ def run_committee(llm: LLM, ctx: Context) -> Iterator[dict]:
     yield {"type": "status", "text": "Chair is deciding..."}
     material = deal_brief + "\n\nScenarios run:\n" + json.dumps(ctx.scenarios, default=str) + \
         "\n\nDebate:\n" + ctx.debate_so_far()
-    verdict = parse_json(llm.chat([{"role": "system", "content": CHAIR_PROMPT},
+    verdict = parse_json(llm.chat([{"role": "system", "content": CHAIR_PROMPT.replace("{hurdle}", str(round(ctx.hurdle * 100)))},
                                    {"role": "user", "content": material}])["content"])
+    verdict = apply_guardrail(verdict, ctx)
     yield {"type": "verdict", "verdict": verdict}
 
     yield {"type": "status", "text": "Writing the memo..."}

@@ -58,3 +58,14 @@ def test_full_meeting():
     check = next(e for e in events if e["type"] == "memo")["factcheck"]
     assert "1,100" in check["verified"] and "18.2%" in check["verified"]
     assert check["unverified"] == ["97.3%"]  # the made-up IRR gets caught
+
+
+def test_guardrail_overrides_unsupported_invest():
+    from committee.agents import apply_guardrail
+    ctx = build_context("TEST", "Test Co", make_facts(), "")
+    ctx.scenarios = [{"scenario": "Starting base case", "by": "model", "irr_pct": 12.8},
+                     {"scenario": "final terms", "by": "Deal Lead", "irr_pct": 11.2}]
+    v = apply_guardrail({"decision": "INVEST", "conviction": 7}, ctx)
+    assert v["decision"] == "PASS" and "11.2" in v["guardrail"]
+    ctx.scenarios[-1]["irr_pct"] = 22.0
+    assert apply_guardrail({"decision": "INVEST"}, ctx)["decision"] == "INVEST"

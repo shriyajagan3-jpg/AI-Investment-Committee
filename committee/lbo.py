@@ -47,10 +47,15 @@ class LBOResult:
         return asdict(self)
 
 
-def run_lbo(base_revenue: float, a: LBOAssumptions) -> LBOResult:
-    """Project the deal year by year and compute returns."""
+def run_lbo(base_revenue: float, a: LBOAssumptions, entry_ebitda: float | None = None) -> LBOResult:
+    """Project the deal year by year and compute returns.
+
+    entry_ebitda = the company's actual most recent EBITDA. The purchase price is
+    based on what the company earns TODAY; the margin assumption only drives the
+    projected years. (If not given, it falls back to revenue x margin.)
+    """
     warnings = []
-    ebitda0 = base_revenue * a.ebitda_margin
+    ebitda0 = entry_ebitda if entry_ebitda and entry_ebitda > 0 else base_revenue * a.ebitda_margin
     if ebitda0 <= 0:
         raise ValueError("EBITDA must be positive to underwrite an LBO.")
 
@@ -102,7 +107,7 @@ def run_lbo(base_revenue: float, a: LBOAssumptions) -> LBOResult:
     return LBOResult(irr, moic, entry_ev, equity_in, exit_ev, exit_equity, years, warnings)
 
 
-def sensitivity(base_revenue: float, a: LBOAssumptions,
+def sensitivity(base_revenue: float, a: LBOAssumptions, entry_ebitda: float | None = None,
                 entry=(8, 10, 12, 14), exit=(8, 10, 12, 14)) -> dict:
     """IRR grid across entry and exit multiples - the table every PE memo has."""
     grid = {}
@@ -110,7 +115,8 @@ def sensitivity(base_revenue: float, a: LBOAssumptions,
         grid[e] = {}
         for x in exit:
             try:
-                r = run_lbo(base_revenue, LBOAssumptions(**{**asdict(a), "entry_multiple": e, "exit_multiple": x}))
+                r = run_lbo(base_revenue, LBOAssumptions(**{**asdict(a), "entry_multiple": e, "exit_multiple": x}),
+                            entry_ebitda)
                 grid[e][x] = r.irr
             except ValueError:
                 grid[e][x] = None

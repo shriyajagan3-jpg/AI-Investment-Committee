@@ -17,6 +17,8 @@ Five AI agents run a private equity investment committee on any US public compan
 
 **Design choices**
 - **LLMs never do the math.** Agents choose assumptions; a tested Python LBO model computes IRR, MOIC, leverage, and interest coverage.
+- **Decision guardrail.** If the Chair votes INVEST but the Deal Lead's final terms, as actually modeled, miss the fund's hurdle IRR, code overrides the vote to PASS. Agents can't talk their way past the math.
+- **Correct LBO pricing.** The purchase price is set on the company's actual latest EBITDA; margin and growth stresses only change the projected years.
 - **Hallucination check.** `factcheck.py` extracts every number from the final memo and matches it against the data the system computed (in $, $M, $B, and %), then flags anything it can't trace.
 - **No agent framework.** The tool-calling loop is about 20 lines in `agents.py`, so the orchestration is fully visible.
 - **Real data handling.** XBRL tag fallbacks (companies rename revenue tags over time), full-year filtering, restated numbers preferred.
@@ -48,7 +50,7 @@ Tip: use mid-size, stable businesses (e.g. CHD, CLX, HRB, DPZ). Mega-caps like A
 python -m pytest -q
 ```
 
-Tests run offline: LBO math checked against a hand calculation, XBRL parsing edge cases, and a full committee meeting with a scripted fake model (which also checks that the fact-checker catches an invented IRR).
+Tests run offline: LBO math checked against a hand calculation, pricing behavior under margin stress, the decision guardrail, XBRL parsing edge cases, and a full committee meeting with a scripted fake model (which also checks that the fact-checker catches an invented IRR).
 
 ## Project layout
 

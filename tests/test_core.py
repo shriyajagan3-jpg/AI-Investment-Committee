@@ -86,3 +86,13 @@ def test_risk_factor_extraction_skips_table_of_contents():
     out = extract_risk_factors(html)
     assert "Competition is intense" in out
     assert "Unresolved" not in out
+
+
+def test_margin_stress_does_not_change_purchase_price():
+    # Price is set on today's actual EBITDA; a lower future margin must hurt returns.
+    base = LBOAssumptions(ebitda_margin=0.20)
+    stressed = LBOAssumptions(ebitda_margin=0.15)
+    a = run_lbo(1000, base, entry_ebitda=200)
+    b = run_lbo(1000, stressed, entry_ebitda=200)
+    assert a.entry_ev == b.entry_ev == 2000
+    assert b.irr < a.irr - 0.05
