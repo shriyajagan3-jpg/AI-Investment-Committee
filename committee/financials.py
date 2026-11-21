@@ -78,6 +78,7 @@ def build_financials(facts: dict, years: int = 5) -> list[dict]:
         r["net_margin"] = pct(r["net_income"])
         r["fcf"] = (r["operating_cash_flow"] - (r["capex"] or 0.0)) if r["operating_cash_flow"] is not None else None
         r["fcf_margin"] = pct(r["fcf"])
+        r["fcf_conversion"] = (r["fcf"] / r["ebitda"]) if r["fcf"] is not None and r["ebitda"] else None
         r["capex_pct"] = pct(r["capex"])
         r["da_pct"] = pct(r["d_and_a"])
         rows.append(r)
@@ -111,9 +112,9 @@ def summarize(rows: list[dict]) -> str:
     def p(x):
         return "n/a" if x is None else f"{x * 100:.1f}%"
 
-    lines = ["Year | Revenue $M | Growth | Gross Margin | EBITDA $M | EBITDA Margin | Net Income $M | FCF $M | FCF Margin | Debt $M | Cash $M"]
+    lines = ["Year | Revenue $M | Growth | Gross Margin | EBITDA $M | EBITDA Margin | Net Income $M | FCF $M | FCF Margin | FCF/EBITDA | Debt $M | Cash $M"]
     for r in rows:
         lines.append(" | ".join([str(r["year"]), m(r["revenue"]), p(r["revenue_growth"]), p(r["gross_margin"]),
                                  m(r["ebitda"]), p(r["ebitda_margin"]), m(r["net_income"]), m(r["fcf"]),
-                                 p(r["fcf_margin"]), m(r["total_debt"]), m(r["cash"])]))
+                                 p(r["fcf_margin"]), p(r["fcf_conversion"]), m(r["total_debt"]), m(r["cash"])]))
     return "\n".join(lines)

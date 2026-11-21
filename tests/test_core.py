@@ -96,3 +96,10 @@ def test_margin_stress_does_not_change_purchase_price():
     b = run_lbo(1000, stressed, entry_ebitda=200)
     assert a.entry_ev == b.entry_ev == 2000
     assert b.irr < a.irr - 0.05
+
+
+def test_risk_extraction_handles_nbsp_and_caps():
+    html = ("<div>ITEM 1A. RISK FACTORS</div><p>" + "Our results could be harmed. " * 100 +
+            "</p><div>ITEM 1B. UNRESOLVED STAFF COMMENTS</div>")
+    out = extract_risk_factors(html)
+    assert "could be harmed" in out and "UNRESOLVED" not in out

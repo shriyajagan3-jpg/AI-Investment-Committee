@@ -72,10 +72,14 @@ def extract_risk_factors(html: str, max_chars: int = 15000) -> str:
     heading and keep the longest one.
     """
     text = BeautifulSoup(html, "html.parser").get_text(" ")
+    # Filings often use non-breaking and zero-width spaces between "Item" and "1A".
+    text = text.replace("\xa0", " ").replace("\u200b", "")
     text = re.sub(r"\s+", " ", text)
 
-    start_re = re.compile(r"item\s*1a\.?\s*[:\-–—]?\s*risk\s*factors", re.I)
-    end_re = re.compile(r"item\s*1b\.?|item\s*1c\.?|item\s*2\.?\s*[:\-–—]?\s*properties", re.I)
+    # \W* allows any punctuation/spacing between the pieces: "ITEM 1A. RISK FACTORS",
+    # "Item 1A - Risk Factors", "Item 1 A.Risk Factors", ...
+    start_re = re.compile(r"item\W*1\W*a\W*risk\W*factors", re.I)
+    end_re = re.compile(r"item\W*1\W*b\W|item\W*1\W*c\W|item\W*2\W*properties", re.I)
 
     best = ""
     for m in start_re.finditer(text):
@@ -83,6 +87,13 @@ def extract_risk_factors(html: str, max_chars: int = 15000) -> str:
         section = text[m.start(): end_m.start() if end_m else m.start() + max_chars]
         if len(section) > len(best):
             best = section
+
+    if len(best) < 2000:  # fallback: some filings drop "Item 1A" from the heading
+        for m in re.finditer(r"risk\W*factors", text, re.I):
+            section = text[m.start(): m.start() + max_chars]
+            if len(section) > len(best) and "could" in section[:3000].lower():
+                best = section
+                break
     return best[:max_chars]  # cap length: LLM context limits + cost
 
 
