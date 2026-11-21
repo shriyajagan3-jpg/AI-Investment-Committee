@@ -57,14 +57,18 @@ if go:
     if url:
         st.caption(f"Source: [latest 10-K]({url}) and SEC XBRL financial data")
 
-    df = pd.DataFrame(ctx.rows).set_index("year")
+    df = pd.DataFrame(ctx.rows)
+    df["year"] = df["year"].astype(str)  # show 2024, not 2,024
+    df = df.set_index("year")
     c1, c2 = st.columns([3, 2])
     with c1:
         st.markdown("**Financial history ($M)**")
-        st.bar_chart(df[["revenue", "ebitda", "fcf"]] / 1e6)
+        st.bar_chart((df[["revenue", "ebitda", "fcf"]] / 1e6).rename(
+            columns={"revenue": "Revenue", "ebitda": "EBITDA", "fcf": "Free cash flow"}), stack=False)
     with c2:
-        st.markdown("**Margins**")
-        st.line_chart(df[["gross_margin", "ebitda_margin", "fcf_margin"]] * 100)
+        st.markdown("**Margins (%)**")
+        st.line_chart((df[["gross_margin", "ebitda_margin", "fcf_margin"]] * 100).rename(
+            columns={"gross_margin": "Gross", "ebitda_margin": "EBITDA", "fcf_margin": "FCF"}))
 
     status = st.empty()
     llm = OpenAILLM()
